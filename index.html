@@ -37,55 +37,154 @@
         .button:hover {
             background-color: #45a049;
         }
+        #author-photo {
+            max-width: 150px;
+            max-height: 150px;
+            margin-bottom: 15px;
+            border-radius: 50%;
+            border: 2px solid #ddd;
+        }
+        #mute-button {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #mute-button:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
     <div id="game-container">
         <h1>Türk Edebiyatı Macerası</h1>
-        <p id="story-text">
-            Zaman yolculuğuna çıkıyorsunuz! Tanzimat Dönemi'ne geldiniz. Önünüzde bir kahvehane var ve içeriden yazarlar hakkında konuşmalar geliyor. Ne yapmak istersiniz?
-        </p>
-        <button class="button" onclick="chooseOption('enter')">Kahvehaneye Gir</button>
-        <button class="button" onclick="chooseOption('ignore')">Yola Devam Et</button>
+        <div id="start-screen">
+            <p>Adınızı girerek oyuna başlayın!</p>
+            <input type="text" id="player-name" placeholder="Adınız" />
+            <button class="button" onclick="startGame()">Başla</button>
+        </div>
+        <div id="game-screen" style="display: none;">
+            <img id="author-photo" src="" alt="Yazar Fotoğrafı" />
+            <p id="story-text"></p>
+            <div id="options"></div>
+        </div>
+        <div id="end-screen" style="display: none;">
+            <p id="final-score"></p>
+            <button class="button" onclick="restartGame()">Yeniden Oyna</button>
+        </div>
     </div>
+    <button id="mute-button" onclick="toggleSound()">🔊 Ses Açık</button>
+
+    <audio id="correct-sound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+    <audio id="incorrect-sound" src="https://www.soundjay.com/button/beep-10.wav"></audio>
+    <audio id="click-sound" src="https://www.soundjay.com/button/beep-01a.wav"></audio>
+
     <script>
-        function chooseOption(option) {
-            const storyText = document.getElementById('story-text');
-            const gameContainer = document.getElementById('game-container');
-            if (option === 'enter') {
-                storyText.innerHTML = "Kahvehaneye girdiniz ve Namık Kemal ile karşılaştınız! Size bir soru soruyor: <br><br> 'Hangi eser Tanzimat'ın ilk romanıdır?'";
-                gameContainer.innerHTML += `
-                    <button class="button" onclick="answerQuestion('a')">Taaşuk-u Talat ve Fitnat</button>
-                    <button class="button" onclick="answerQuestion('b')">Araba Sevdası</button>
-                `;
-            } else if (option === 'ignore') {
-                storyText.innerHTML = "Kahvehaneyi geçtiniz ve yolda Ahmet Mithat Efendi'nin bir kitabını buldunuz. İlerlemek için dönüp kahvehaneye girmeniz gerekiyor!";
+        const questions = [
+            { 
+                author: "Namık Kemal",
+                photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Namik_kemal.jpg/1200px-Namik_kemal.jpg",
+                text: "Namık Kemal: 'İslam Bey’i görmüş müydün? O, vatanını savunmak için elinde silahla çarpışıyordu. Nerede görmüş olabilirsin?'",
+                options: ["Vatan Yahut Silistre", "Şair Evlenmesi", "Araba Sevdası", "Felatun Bey ile Rakım Efendi"], 
+                correct: "Vatan Yahut Silistre" 
+            },
+            { 
+                author: "Şinasi",
+                photo: "https://upload.wikimedia.org/wikipedia/commons/a/a1/Shinasi_Efendi.jpg",
+                text: "Şinasi: 'Müştak Bey’i hatırladın mı? Kıskançlık içinde nişanlısının başka biriyle evleneceğinden şüpheleniyordu. Nerede görmüş olabilirsin?'",
+                options: ["Şair Evlenmesi", "Taaşuk-u Talat ve Fitnat", "Vatan Yahut Silistre", "Eylül"], 
+                correct: "Şair Evlenmesi" 
+            },
+            { 
+                author: "Ziya Paşa",
+                photo: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Ziya_Pasa.jpg/1200px-Ziya_Pasa.jpg",
+                text: "Ziya Paşa: 'Benim şiirlerimde halk edebiyatının etkilerini fark etmiş miydin? Şu dörtlüğümde olduğu gibi: Ayinesi iştir kişinin, lafa bakılmaz. Hangi eserimde yer aldığını hatırlıyor musun?'",
+                options: ["Harabat", "Tercüman-ı Ahval Mukaddimesi", "Şiir ve İnşa", "Vatan Yahut Silistre"], 
+                correct: "Şiir ve İnşa" 
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let isSoundMuted = false;
+
+        function toggleSound() {
+            isSoundMuted = !isSoundMuted;
+            document.getElementById("mute-button").textContent = isSoundMuted ? "🔇 Ses Kapalı" : "🔊 Ses Açık";
+        }
+
+        function playSound(id) {
+            if (!isSoundMuted) {
+                document.getElementById(id).play();
             }
         }
 
-        function answerQuestion(answer) {
-            const storyText = document.getElementById('story-text');
-            const gameContainer = document.getElementById('game-container');
-            if (answer === 'a') {
-                storyText.innerHTML = "Tebrikler! Doğru cevap verdiniz. Şimdi Servet-i Fünun Dönemi'ne yolculuk yapıyorsunuz. Yeni soru geliyor: <br><br> 'Servet-i Fünun Dönemi'nde bireysellik ve melankoli hangi romanda işlenmiştir?'";
-                gameContainer.innerHTML = `
-                    <h1>Türk Edebiyatı Macerası</h1>
-                    <p id="story-text">${storyText.innerHTML}</p>
-                    <button class="button" onclick="nextQuestion('a')">Eylül</button>
-                    <button class="button" onclick="nextQuestion('b')">Mai ve Siyah</button>
-                `;
-            } else if (answer === 'b') {
-                storyText.innerHTML = "Yanlış cevap. Araba Sevdası Servet-i Fünun Dönemi'ne aittir. Oyuna yeniden başlayabilirsiniz!";
+        function startGame() {
+            const playerName = document.getElementById("player-name").value.trim();
+            if (playerName === "") {
+                alert("Lütfen bir ad girin!");
+                return;
+            }
+            playSound("click-sound");
+            document.getElementById("start-screen").style.display = "none";
+            document.getElementById("game-screen").style.display = "block";
+            showQuestion();
+        }
+
+        function showQuestion() {
+            if (currentQuestionIndex < questions.length) {
+                const question = questions[currentQuestionIndex];
+                document.getElementById("author-photo").src = question.photo;
+                document.getElementById("story-text").textContent = question.text;
+
+                const optionsDiv = document.getElementById("options");
+                optionsDiv.innerHTML = "";
+
+                question.options.forEach(option => {
+                    const button = document.createElement("button");
+                    button.textContent = option;
+                    button.className = "button";
+                    button.onclick = () => {
+                        playSound("click-sound");
+                        checkAnswer(option);
+                    };
+                    optionsDiv.appendChild(button);
+                });
+            } else {
+                endGame();
             }
         }
 
-        function nextQuestion(answer) {
-            const storyText = document.getElementById('story-text');
-            if (answer === 'a') {
-                storyText.innerHTML = "Tebrikler! Doğru cevap verdiniz. Servet-i Fünun'un ilk psikolojik romanını doğru bildiniz. Oyunu tamamladınız!";
-            } else if (answer === 'b') {
-                storyText.innerHTML = "Yanlış cevap. Mai ve Siyah başka bir Servet-i Fünun romanıdır. Oyuna yeniden başlayabilirsiniz!";
+        function checkAnswer(selectedOption) {
+            const correctAnswer = questions[currentQuestionIndex].correct;
+            if (selectedOption === correctAnswer) {
+                score += 5;
+                playSound("correct-sound");
+            } else {
+                playSound("incorrect-sound");
             }
+            currentQuestionIndex++;
+            showQuestion();
+        }
+
+        function endGame() {
+            playSound("click-sound");
+            document.getElementById("game-screen").style.display = "none";
+            document.getElementById("end-screen").style.display = "block";
+            document.getElementById("final-score").textContent = `Toplam Puanınız: ${score}`;
+        }
+
+        function restartGame() {
+            currentQuestionIndex = 0;
+            score = 0;
+            playSound("click-sound");
+            document.getElementById("end-screen").style.display = "none";
+            document.getElementById("start-screen").style.display = "block";
         }
     </script>
 </body>
